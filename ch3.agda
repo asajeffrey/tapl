@@ -80,51 +80,45 @@ thm358 {t} nf = helper (valueOrRedex t) nf where
   helper (redex r) nf = CONTRADICTION (nf (redex r))
 
 -- But also we can buid an interpreter.
--- The idea is to provide some "fuel" n, and run the term for at most n steps
--- `t ⟶^[ n ] t′` whenever `t` can reduce to `t′` in at most n steps.
 
-data _⟶^[_]_ : Term → Nat → Term → Set where
+data _⟶*_ : Term → Term → Set where
 
-  nofuel : ∀ {t} →
+  done : ∀ {t} →
 
-    -------------
-    t ⟶^[ 0 ] t
+    --------
+    t ⟶* t
 
-  value : ∀ {t n} →
-
-    Value(t) →
-    -------------
-    t ⟶^[ n ] t
-
-  redex : ∀ {t t′ t″ n} →
+  redex : ∀ {t t′ t″} →
 
     t ⟶ t′ →
-    t′ ⟶^[ n ] t″ →
-    ------------------
-    t ⟶^[ 1 + n ] t″
+    t′ ⟶* t″ →
+    ----------
+    t ⟶* t″
 
--- An interpreter result for running term `t` with fuel `n` is `t ⟶^[ n ] t′`  for some term `t′`.
+-- An interpreter result
 
-data Result^[_]  : Nat → Term → Set where
+data Result  : Term → Set where
 
-  result : ∀ {n t t′} →
+  result : ∀ {t t′} →
   
-    t ⟶^[ n ] t′ →
-    -------------
-    Result^[ n ](t)
+    t ⟶* t′ →
+    Value(t′) →
+    ---------
+    Result(t)
 
--- The interpreter just calls `valueOrRedex` at most `n` times.
+-- The interpreter just calls `valueOrRedex` until it is a value.
+-- This might bot terminate!
 
-interp : (n : Nat) → (t : Term) → Result^[ n ](t)
-interp zero    t = result nofuel
-interp (suc n) t = helper n (valueOrRedex t) where
+{-# NON_TERMINATING #-}
+interp : (t : Term) → Result(t)
+interp t = helper₂ (valueOrRedex t) where
 
-  step : ∀ {t t′ n} → (t ⟶ t′) → Result^[ n ](t′) → Result^[ 1 + n ](t)
-  step r (result s) = result (redex r s)
+  helper₁ : ∀ {t t′} → (t ⟶ t′) → Result(t′) → Result(t)
+  helper₁ r (result s v) = result (redex r s) v
 
-  helper : ∀ {t} → (n : Nat) → ValueOrRedex(t) → Result^[ 1 + n ](t)
-  helper n (value v) = result (value v)
-  helper n (redex {t} {t′} r) = step r (interp n t′)
+  helper₂ : ∀ {t} → ValueOrRedex(t) → Result(t)
+  helper₂ (value v)          = result done v
+  helper₂ (redex {t} {t′} r) = helper₁ r (interp t′)
 
 -- Examples
 
@@ -140,12 +134,13 @@ s or t = if s then true else t end
 ex : Term
 ex = (true and false) or (not true)
 
--- Try normalizing (CTRL-C CTRL-N) `interp 4 ex`
+-- Try normalizing (CTRL-C CTRL-N) `interp ex`
 -- you get told the result but also the derivation tree for every step!
 -- ```
 -- result
 -- (redex (E─IfCong E─IfTrue)
 --  (redex E─IfFalse
 --   (redex E─IfTrue
---    (value false))))
+--    done)))
+-- false
 -- ```
