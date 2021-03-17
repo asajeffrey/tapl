@@ -54,3 +54,27 @@ primitive
 
 _+++_ = primStringAppend
 _===_ = primStringEquality
+
+data _≡_ {a} {A : Set a} (x : A) : A → Set a where
+  refl : x ≡ x
+{-# BUILTIN EQUALITY _≡_  #-}
+
+_≢_ :  ∀ {a} {A : Set a} → A → A → Set a
+(x ≢ y) = (x ≡ y) → FALSE
+
+data Dec(A : Set) : Set where
+  yes : A → Dec(A)
+  no : (A → FALSE) → Dec(A)
+
+primitive
+  primEraseEquality : ∀ {a} {A : Set a} {x y : A} → x ≡ y → x ≡ y
+
+primTrustMe : ∀ {a} {A : Set a} {x y : A} → x ≡ y
+primTrustMe {x = x} {y} = primEraseEquality unsafePrimTrustMe where
+   postulate unsafePrimTrustMe : x ≡ y
+
+_≟_ : (s t : String) → Dec(s ≡ t)
+(s ≟ t) with primStringEquality s t
+(s ≟ t) | true = yes primTrustMe
+(s ≟ t) | false = no unsafeNo where
+  postulate unsafeNo : s ≢ t
