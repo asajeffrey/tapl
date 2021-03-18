@@ -1,4 +1,4 @@
-open import prelude
+open import prelude renaming (_≟String_ to _≟_)
 
 infixl 5 _$_
 

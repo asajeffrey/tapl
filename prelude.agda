@@ -39,12 +39,6 @@ suc n == suc m = n == m
 _     == _     = false
 {-# BUILTIN NATEQUALS _==_ #-}
 
-_<_ : Nat → Nat → Bool
-_     < zero  = false
-zero  < suc _ = true
-suc n < suc m = n < m
-{-# BUILTIN NATLESS _<_ #-}
-
 postulate String : Set
 {-# BUILTIN STRING String #-}
 
@@ -73,8 +67,29 @@ primTrustMe : ∀ {a} {A : Set a} {x y : A} → x ≡ y
 primTrustMe {x = x} {y} = primEraseEquality unsafePrimTrustMe where
    postulate unsafePrimTrustMe : x ≡ y
 
-_≟_ : (s t : String) → Dec(s ≡ t)
-(s ≟ t) with primStringEquality s t
-(s ≟ t) | true = yes primTrustMe
-(s ≟ t) | false = no unsafeNo where
+_≟String_ : (s t : String) → Dec(s ≡ t)
+(s ≟String t) with primStringEquality s t
+(s ≟String t) | true = yes primTrustMe
+(s ≟String t) | false = no unsafeNo where
   postulate unsafeNo : s ≢ t
+
+_≟Nat_ : (m n : Nat) → Dec(m ≡ n)
+(m ≟Nat n) with m == n
+(m ≟Nat n) | true = yes primTrustMe
+(m ≟Nat n) | false = no unsafeNo where
+  postulate unsafeNo : m ≢ n
+
+data _≤_ : Nat → Nat → Set where
+  zero : ∀ {x} → zero ≤ x
+  suc : ∀ {x y} → (x ≤ y) → (suc x ≤ suc y)
+
+_≤?_ : (x y : Nat) → Dec(x ≤ y)
+zero ≤? y = yes zero
+suc x ≤? zero = no (λ ())
+suc x ≤? suc y with (x ≤? y)
+... | yes p = yes (suc p)
+... | no  p = no  (λ { (suc q) → p q })
+
+if : ∀ {X Y : Set} → Dec(X) → Y → Y → Y
+if (yes p) x y = x
+if (no  p) x y = y
