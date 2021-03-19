@@ -172,3 +172,7 @@ two = succ $ (succ $ zer)
 
 four : Term
 four = add $ two $ two
+
+-- DANGER! Do not run interp loop
+loop : Term
+loop = (fun (var 0 $ var 0)) $ (fun (var 0 $ var 0))
