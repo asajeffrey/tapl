@@ -49,6 +49,11 @@ primitive
 _+++_ = primStringAppend
 _===_ = primStringEquality
 
+data List(A : Set) : Set where
+  nil : List(A)
+  _::_ : A → List(A) → List(A)
+{-# BUILTIN LIST List  #-}
+
 data _≡_ {a} {A : Set a} (x : A) : A → Set a where
   refl : x ≡ x
 {-# BUILTIN EQUALITY _≡_  #-}
