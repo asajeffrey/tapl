@@ -1,3 +1,5 @@
+{-# OPTIONS --rewriting #-}
+
 data FALSE : Set where
 
 CONTRADICTION : ∀ {A : Set} → FALSE → A
@@ -57,6 +59,10 @@ data List(A : Set) : Set where
 data _≡_ {a} {A : Set a} (x : A) : A → Set a where
   refl : x ≡ x
 {-# BUILTIN EQUALITY _≡_  #-}
+{-# BUILTIN REWRITE _≡_ #-}
+
+cong : ∀ {a} {X Y : Set a} {x y : X} (f : X → Y) → (x ≡ y) → (f x ≡ f y)
+cong f refl = refl
 
 _≢_ :  ∀ {a} {A : Set a} → A → A → Set a
 (x ≢ y) = (x ≡ y) → FALSE
@@ -95,6 +101,24 @@ suc x ≤? suc y with (x ≤? y)
 ... | yes p = yes (suc p)
 ... | no  p = no  (λ { (suc q) → p q })
 
+_<_ : Nat → Nat → Set
+m < n = (n ≤ m) → FALSE
+
+asym : ∀ {m n} → (m ≤ n) → (n ≤ m) → (m ≡ n)
+asym zero zero = refl
+asym (suc p) (suc q) with asym p q
+asym (suc p) (suc q) | refl = refl
+
 if : ∀ {X Y : Set} → Dec(X) → Y → Y → Y
 if (yes p) x y = x
 if (no  p) x y = y
+
++zero : ∀ {m} → (m + zero) ≡ m
++zero {zero} = refl
++zero {suc m} = cong suc +zero
+
++suc : ∀ {m n} → (m + suc n) ≡ suc (m + n)
++suc {zero} = refl
++suc {suc m} = cong suc +suc
+
+{-# REWRITE +zero +suc #-}
